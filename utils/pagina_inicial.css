@@ -1,0 +1,68 @@
+.icon {
+    font-size: 30px;
+    color: white;
+    margin: 5px;
+}
+
+.navegar {
+    background-color: #F2B544;
+}
+
+.titulo2 {
+    font-family: Chalkduster, fantasy;
+    font-size: 60px;
+    text-align: center;
+    color: darkred;
+}
+
+.texto {
+    font-family: Avantgarde, TeX Gyre Adventor, URW Gothic L, sans-serif;
+    font-size: 40px;
+    text-align: center;
+}
+
+.card {
+    background-color: #a9a77f;
+    height: 75vh;
+    width: 45%;
+}
+
+.footer_cor {
+    background-color: #9AA97F;
+}
+
+.imagem {
+    display: flex;
+    flex-wrap: wrap;
+    overflow-wrap: unset;
+    overflow: clip;
+    max-height: calc(100vh - 100px);
+}
+
+.imagem img {
+    padding-top: 80px;
+}
+
+#div-container{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+}
+#div-container form{
+    margin-top: 100px;
+    background-color: #9AA97F;
+    height: 60vh;
+    width: 30%;
+}
+
+.btn {
+    background-color: black;
+}
+
+.card_cadastro {
+    background-color: #9AA97F;
+}
+
+.form {
+    color: white;
+}
