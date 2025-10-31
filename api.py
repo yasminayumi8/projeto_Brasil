@@ -1,7 +1,7 @@
 from datetime import datetime
 from functools import wraps
 
-from flask import Flask, request, jsonify, redirect
+from flask import Flask, request, jsonify, redirect, render_template, url_for
 from flask_pydantic_spec import FlaskPydanticSpec
 from flask_jwt_extended import get_jwt_identity, JWTManager, create_access_token, jwt_required
 from sqlalchemy import select
@@ -31,12 +31,42 @@ def admin_required(fn):
             db.close()
     return wrapper
 
+
+# Rota para renderizar a página inicial com Jinja
+@app.route('/pagina_inicial', methods=['GET'])
+def pagina_inicial():
+    # Renderiza o template 'pagina_inicial.html' que herda de 'base.html'
+    return render_template('pagina_inicial.html')
+
+# Se quiser que a rota raiz '/' vá para a página inicial:
 @app.route('/', methods=['GET'])
 def index():
-    return jsonify({
-        'message': 'Welcome to raizes do Brasil!',
-    })
+    return redirect(url_for('pagina_inicial')) # Redireciona para a rota com o template
 
+
+@app.route('/loja', methods=['GET'])
+# Removendo jwt_required() para que a loja seja visível ao público.
+# Se for uma loja exclusiva, adicione @jwt_required()
+def renderizar_loja():
+    db = SessionLocal()
+    try:
+        # Busca TODOS os produtos.
+        # ATENÇÃO: Se o Produto não tem 'uso', 'parte_utilizada', etc.,
+        # você DEVE ATUALIZAR O models.py!
+        resultado = db.execute(select(Produto)).scalars().all()
+
+        # Puxamos a lista de dicionários usando serialize_produto()
+        produtos_para_template = [p.serialize_produto() for p in resultado]
+
+        # Renderiza o template 'loja.html', passando a lista de produtos
+        return render_template('loja.html', produtos=produtos_para_template)
+
+    except SQLAlchemyError as e:
+        # Em caso de erro, retorna uma página de loja vazia com alerta.
+        print(f"Erro no Banco de Dados ao carregar loja: {e}")
+        return render_template('loja.html', produtos=[], erro="Erro ao carregar produtos. Tente mais tarde."), 500
+    finally:
+        db.close()
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -97,6 +127,49 @@ def cadastrar_usuario():
         return jsonify({'erro': str(e)}), 400
     finally:
         db.close()
+
+
+@app.route('/cadastro/medicamento', methods=['POST'])
+@jwt_required()
+def cadastro_medicamento():
+    dados = request.get_json()
+    db = SessionLocal()
+    try:
+        # Validação da Rota de MEDICAMENTO (exige campos de Produto + campos específicos)
+        campos_obrigatorios_med = ['nome_produto', 'preco_produto', 'descricao_produto', 'uso', 'parte_utilizada',
+                                   'forma_uso']
+
+        if not all(dados.get(campo) for campo in campos_obrigatorios_med):
+            return jsonify({
+                               "error": "Preencher todos os campos obrigatórios para Medicamento (incluindo uso, parte e forma)"}), 400
+
+        novo_medicamento = Produto(
+            # Campos de Produto (herdado)
+            nome_produto=dados['nome_produto'],
+            preco_produto=dados['preco_produto'],
+            descricao_produto=dados['descricao_produto'],
+            # Campos opcionais de Produto
+            dimensao_produto=dados.get('dimensao_produto'),
+            peso_produto=dados.get('peso_produto'),
+            cor_produto=dados.get('cor_produto'),
+
+            # Campos ESPECÍFICOS do Medicamento
+            uso=dados['uso'],
+            parte_utilizada=dados['parte_utilizada'],
+            forma_uso=dados['forma_uso'],
+            imagem_url=dados.get('imagem_url')
+        )
+        novo_medicamento.save(db)
+        produto_response = novo_medicamento.serialize_produto()
+        produto_response["id_produto"] = novo_medicamento.id_produto
+        return jsonify(produto_response), 201
+    except Exception as e:
+        return jsonify({"error": f"Erro no cadastro do medicamento: {str(e)}"}), 400
+    finally:
+        db.close()
+
+
+# ... (o resto da sua API continua inalterado) ...
 
 @app.route('/cadastro/produto',methods=['POST'])
 @jwt_required()
@@ -191,6 +264,13 @@ def cadastro_movimentacao():
         return jsonify({'erro': str(e)}), 400
     finally:
         db.close()
+
+# A nova rota Flask (no server.py) - Ela exibe o HTML.
+@app.route('/cadastro/movimentacao_form', methods=['GET'])
+@jwt_required()
+@admin_required
+def renderizar_cadastro_movimentacao():
+    return render_template('cadastro_movimentacao.html')
 
 @app.route('/cadastro/pedido', methods=['POST'])
 @jwt_required()

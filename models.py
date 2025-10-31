@@ -9,18 +9,27 @@ SessionLocal = sessionmaker(bind=engine)
 
 Base = declarative_base()
 
+
 class Produto(Base):
     __tablename__ = 'produtos'
     id_produto = Column(Integer, primary_key=True)
-    nome_produto = Column(String)
-    dimensao_produto = Column(String)
+    nome_produto = Column(String, nullable=False, index=True )
+    dimensao_produto = Column(String, nullable=False, index=True)
     preco_produto = Column(String(11), nullable=False, index=True)
     peso_produto = Column(String(11), nullable=False, index=True)
-    cor_produto = Column(String)
-    descricao_produto = Column(String)
+    cor_produto = Column(String,nullable=False, index=True)
+    descricao_produto = Column(String,nullable=False, index=True)
+
+    # NOVOS CAMPOS ADICIONADOS PARA A LOJA:
+    uso = Column(String, nullable=False, index=True)  # Ex: "Nisũ, para nó ou bolhas nas juntas"
+    parte_utilizada = Column(String, nullable=False, index=True)  # Ex: "folha"
+    forma_uso = Column(String, nullable=False, index=True )  # Ex: "cozimento e banho"
+    imagem_url = Column(String, nullable=False, index=True)  # URL para a imagem (ou caminho estático)
 
     def __repr__(self):
-        return '<Produto {} {} {} {} {} {} {}>'.format(self.id_produto, self.nome_produto, self.dimensao_produto, self.preco_produto, self.peso_produto, self.cor_produto, self.descricao_produto)
+        return '<Produto {} {} {} {} {} {} {} {} {} {} {} >'.format(self.id_produto, self.nome_produto, self.dimensao_produto,
+                                                                    self.preco_produto, self.peso_produto, self.cor_produto,
+                                                                    self.descricao_produto, self.uso, self.parte_utilizada, self.forma_uso, self.imagem_url)
 
     def save(self, db_session):
         try:
@@ -43,6 +52,10 @@ class Produto(Base):
             'peso_produto': self.peso_produto,
             'cor_produto': self.cor_produto,
             'descricao_produto': self.descricao_produto,
+            'uso': self.uso,
+            'parte_utilizada': self.parte_utilizada,
+            'forma_uso': self.forma_uso,
+            'imagem_url': self.imagem_url,
         }
         return dados_produto
 
@@ -50,11 +63,11 @@ class Produto(Base):
 class Usuario(Base):
     __tablename__ = 'usuarios'
     id = Column(Integer, primary_key=True)
-    nome = Column(String)
+    nome = Column(String, nullable=False, index=True)
     CPF = Column(String(11), nullable=False, unique=True, index=True)
     email = Column(String(30), nullable=False, index=True)
     password_hash = Column(String(128), nullable=False, index=True)  # aumentado o tamanho
-    papel = Column(String, default="usuario")
+    papel = Column(String, default="usuario", nullable=False, index=True)
 
     def __repr__(self):
         return '<usuario {} {} {} {} {} {}>'.format(self.id, self.nome, self.CPF, self.email, self.password_hash, self.papel)
