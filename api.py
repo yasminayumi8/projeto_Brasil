@@ -9,7 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from models import SessionLocal
 
 
-from models import SessionLocal, Usuario, Produto, Blog, Movimentacao, Pedido
+from models import SessionLocal, Usuario, Produto, Blog, Movimentacao, Pedido, Cartao, Envio
 
 app = Flask(__name__)
 app.config["JWT_SECRET_KEY"] = "secret!"  # chave usada para assinar os tokens
@@ -99,6 +99,56 @@ def login():
     finally:
         db.close()
 
+@app.route('/cadastro/cartao', methods=['POST'])
+def cadastro_cartao():
+
+    dados = request.get_json()
+    db = SessionLocal()
+    try:
+        if not all([dados.get('nome_titular'), dados.get('numero_cartao'), dados.get('data_validade'), dados.get('CVV')]):
+            return jsonify({'erro': 'Campos obrigatórios não podem ser vazios'}), 400
+
+        novo_cartao = Cartao(
+            nome_titular=dados['nome_titular'],
+            numero_cartao=int(dados['numero_cartao']),
+            data_validade=dados['data_validade'],
+            CVV=dados['CVV'],
+        )
+        novo_cartao.save()
+        cartao_response = novo_cartao.serialize_cartao()
+        cartao_response['id_cartao'] = novo_cartao.id_cartao
+        return jsonify(cartao_response), 201
+    except Exception as e:
+        return jsonify({"msg": str(e)}), 400
+    finally:
+        db.close()
+
+@app.route('/cadastro/envio', methods=['POST'])
+def cadastro_envio():
+
+    dados = request.get_json()
+    db = SessionLocal()
+    try:
+        if not all([dados.get('nome_destinatario'), dados.get('endereco'), dados.get('cidade'), dados.get('estado'), dados.get('CEP'), dados.get('telefone'), dados.get('email')]):
+            return jsonify({'erro': 'Campos obrigatórios não podem ser vazios'}), 400
+
+        novo_envio = Envio(
+            nome_destinatario=dados['nome_destinatario'],
+            endereco=dados['endereco'],
+            cidade=dados['cidade'],
+            estado=dados['estado'],
+            CEP=dados['telefone'],
+            telefone=dados['telefone'],
+            email=dados['email'],
+        )
+        novo_envio.save()
+        envio_response = novo_envio.serialize_envio()
+        envio_response['id_envio'] = novo_envio.id_envio
+        return jsonify(envio_response), 201
+    except Exception as e:
+        return jsonify({"msg": str(e)}), 400
+    finally:
+        db.close()
 
 @app.route('/cadastro/usuario', methods=['POST'])
 def cadastrar_usuario():
@@ -136,8 +186,8 @@ def cadastro_medicamento():
     db = SessionLocal()
     try:
         # Validação da Rota de MEDICAMENTO (exige campos de Produto + campos específicos)
-        campos_obrigatorios_med = ['nome_produto', 'preco_produto', 'descricao_produto', 'uso', 'parte_utilizada',
-                                   'forma_uso']
+        campos_obrigatorios_med = ['nome_produto', 'preco_produto', 'descricao_produto', 'fabricante', 'categoria_produto', 'dimensao_produto', 'peso_produto', 'cor_produto', 'uso', 'parte_utilizada',
+                                   'forma_uso', 'imagem_url']
 
         if not all(dados.get(campo) for campo in campos_obrigatorios_med):
             return jsonify({
@@ -148,6 +198,8 @@ def cadastro_medicamento():
             nome_produto=dados['nome_produto'],
             preco_produto=dados['preco_produto'],
             descricao_produto=dados['descricao_produto'],
+            fabricante =dados['frabricante'],
+            categoria_produto = dados['categoria_produto'],
             # Campos opcionais de Produto
             dimensao_produto=dados.get('dimensao_produto'),
             peso_produto=dados.get('peso_produto'),
@@ -179,7 +231,7 @@ def cadastro_produto():
     db = SessionLocal()
     try:
         if not dados['nome_produto'] or not dados['dimensao_produto'] or not dados['preco_produto'] or not \
-        dados['peso_produto'] or not dados['cor_produto'] or not dados['descricao_produto']:
+        dados['peso_produto'] or not dados['cor_produto'] or not dados['descricao_produto'] or not dados['fabricante'] or not dados['categoria_produto'] or not dados['imagem_url']:
             return jsonify({"error" : "preencher todos os campos"}), 400
 
         novo_produto = Produto(
@@ -188,7 +240,10 @@ def cadastro_produto():
                 preco_produto=dados['preco_produto'],
                 peso_produto=dados['peso_produto'],
                 cor_produto=dados['cor_produto'],
-                descricao_produto=dados['descricao_produto']
+                descricao_produto=dados['descricao_produto'],
+                fabricante =dados['frabricante'],
+                categoria_produto = dados['categoria_produto'],
+                imagem_url = dados['imagem_url']
         )
         novo_produto.save(db)
         produto_response = novo_produto.serialize_produto()
@@ -319,6 +374,31 @@ def cadastro_pedido():
     finally:
         db.close()
 
+@app.route('/consulta/envio/<int:id>', methods=['GET'])
+@jwt_required()
+def consulta_envio(id):
+    db = SessionLocal()
+    try:
+        var_envio = select(Envio).where(Envio.id_envio == id)
+        var_envio = db.execute(var_envio).scalar()
+
+        if not var_envio:
+            return jsonify({'mensagem': 'Dados de envio não encontrado'}), 404
+
+        envio_resultado = {
+            "nome_destinatario" : var_envio.nome_destinatario,
+            "endereco" : var_envio.endereco,
+            "cidade" : var_envio.cidade,
+            "estado" : var_envio.estado,
+            "CEP" : var_envio.CEP,
+            "telefone" : var_envio.telefone,
+            "email" : var_envio.email,
+        }
+        return jsonify({'envio': envio_resultado}), 200
+    except Exception as e:
+        return jsonify({'mensagem': f'Erro de consulta: {str(e)}'}), 400
+    finally:
+        db.close()
 
 @app.route('/consulta/usuario/<int:id>', methods=['GET'])
 @jwt_required()
@@ -326,20 +406,22 @@ def consulta_usuario(id):
     db = SessionLocal()
     try:
         var_usuario = select(Usuario).where(Usuario.id == id)
-        stmt = select(Usuario).where(Usuario.id == id)
-        var_usuario = db.execute(stmt).scalar()
+        var_usuario = db.execute(var_usuario).scalar()
+
         if not var_usuario:
-            return jsonify({'erro': 'Usuário não encontrado'}), 404
+            return jsonify({'mensagem': 'Dados do usuario não encontrado'}), 404
+
         usuario_resultado = {
-            "id": var_usuario.id,
-            "nome": var_usuario.nome,
-            "email": var_usuario.email,
-            "papel": var_usuario.papel,
+           "nome" : var_usuario.nome,
+            "CPF" : var_usuario.CPF,
+            "email" : var_usuario.email,
+            "papel" : var_usuario.papel,
         }
-        print(usuario_resultado)
-        return jsonify({'Usuario' :usuario_resultado}),200
-    except ValueError:
-        return jsonify({'mensagem':'Erro de cadasro'}), 400
+        return jsonify({'usuario': usuario_resultado}), 200
+    except Exception as e:
+        return jsonify({'mensagem': f'Erro de consulta: {str(e)}'}), 400
+    finally:
+        db.close()
 
 @app.route('/consulta/produto/<int:id>', methods=['GET'])
 @jwt_required()
@@ -560,6 +642,77 @@ def lista_movimentacao():
         return jsonify({'erro': str(e)}), 400
     finally:
         db.close()  # Fecha a sessão
+
+@app.route('/atualizar/cartao/<int:id_cartao>', methods=['PUT'])
+@jwt_required()
+def atualizar_cartao(id_cartao):
+    db = SessionLocal()  # Cria a sessão
+    try:
+        cartao = db.execute(
+            select(Cartao).where(Cartao.id == id_cartao)
+        ).scalar()
+
+        if not cartao:
+            return jsonify({'erro': 'dados de cartao não encontrado'}), 404
+
+        dados = request.get_json()
+
+        # Verifica se todos os campos obrigatórios estão presentes
+        campos_obrigatorios = ['nome_titular', 'numero_cartao', 'data_validade', 'CVV']
+        if not all(dados.get(campo) for campo in campos_obrigatorios):
+            return jsonify({"erro": "Preencher todos os campos obrigatórios"}), 400
+
+        # Atualiza os campos
+        cartao.nome_titular = dados['nome_titular']
+        cartao.numero_cartao = dados['numero_cartao']
+        cartao.data_validade = dados['data_validade']
+        cartao.CVV = dados['CVV']
+
+        db.commit()
+        return jsonify({"mensagem": "Dados do cartao atualizado com sucesso"}), 200
+
+    except SQLAlchemyError as e:
+        db.rollback()
+        return jsonify({'erro': str(e)}), 400
+    finally:
+        db.close()  # Garante que a sessão seja fechada
+
+@app.route('/atualizar/envio/<int:id_envio>',methods=['PUT'])
+@jwt_required()
+def atualizar_envio(id_envio):
+    db = SessionLocal()  # Cria a sessão
+    try:
+        envio = db.execute(
+            select(Envio).where(Envio.id == id_envio)
+        ).scalar()
+
+        if not envio:
+            return jsonify({'erro': 'dados de envio não encontrado'}), 404
+
+        dados = request.get_json()
+
+        # Verifica se todos os campos obrigatórios estão presentes
+        campos_obrigatorios = ['nome_destinatario', 'endereco', 'cidade', 'estado', 'CEP', 'telefone', 'email']
+        if not all(dados.get(campo) for campo in campos_obrigatorios):
+            return jsonify({"erro": "Preencher todos os campos obrigatórios"}), 400
+
+        # Atualiza os campos
+        envio.nome_destinatario = dados['nome_destinatario']
+        envio.endereco = dados['endereco']
+        envio.cidade = dados['cidade']
+        envio.estado = dados['estado']
+        envio.CEP = dados['telefone']
+        envio.telefone = dados['telefone']
+        envio.email = dados['email']
+
+        db.commit()
+        return jsonify({"mensagem": "Dados de envio atualizado com sucesso"}), 200
+
+    except SQLAlchemyError as e:
+        db.rollback()
+        return jsonify({'erro': str(e)}), 400
+    finally:
+        db.close()  # Garante que a sessão seja fechada
 
 
 @app.route('/atualizar/usuario/<int:id_usuario>', methods=['PUT'])

@@ -19,6 +19,8 @@ class Produto(Base):
     peso_produto = Column(String(11), nullable=False, index=True)
     cor_produto = Column(String,nullable=False, index=True)
     descricao_produto = Column(String,nullable=False, index=True)
+    fabricante = Column(String, nullable=False, index=True)
+    categoria_produto = Column(String, nullable=False, index=True)
 
     # NOVOS CAMPOS ADICIONADOS PARA A LOJA:
     uso = Column(String, nullable=False, index=True)  # Ex: "Nisũ, para nó ou bolhas nas juntas"
@@ -27,9 +29,9 @@ class Produto(Base):
     imagem_url = Column(String, nullable=False, index=True)  # URL para a imagem (ou caminho estático)
 
     def __repr__(self):
-        return '<Produto {} {} {} {} {} {} {} {} {} {} {} >'.format(self.id_produto, self.nome_produto, self.dimensao_produto,
+        return '<Produto {} {} {} {} {} {} {} {} {} {} {} {} {} >'.format(self.id_produto, self.nome_produto, self.dimensao_produto,
                                                                     self.preco_produto, self.peso_produto, self.cor_produto,
-                                                                    self.descricao_produto, self.uso, self.parte_utilizada, self.forma_uso, self.imagem_url)
+                                                                    self.descricao_produto, self.fabricante, self.categoria_produto, self.uso, self.parte_utilizada, self.forma_uso, self.imagem_url)
 
     def save(self, db_session):
         try:
@@ -52,6 +54,8 @@ class Produto(Base):
             'peso_produto': self.peso_produto,
             'cor_produto': self.cor_produto,
             'descricao_produto': self.descricao_produto,
+            'fabricante': self.fabricante,
+            'categoria_produto': self.categoria_produto,
             'uso': self.uso,
             'parte_utilizada': self.parte_utilizada,
             'forma_uso': self.forma_uso,
@@ -222,6 +226,80 @@ class Blog(Base):
             'comentario': self.comentario,
         }
         return dados_blog
+class Cartao(Base):
+    __tablename__ = 'cartao'
+    id_cartao = Column(Integer, primary_key=True)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+    nome_titular = Column(String(50), nullable=False, index=True)
+    numero_cartao = Column(String(20), nullable=False, index=True)
+    data_validade = Column(Date, nullable=False, index=True)  # agora tipo Date
+    CVV = Column(String(3), nullable=False, index=True)
+
+    def __repr__(self):
+        return '<cartao: {} {} {} {} {} {}>'.format(self.id_cartao, self.usuario_id, self.nome_titular, self.numero_cartao, self.data_validade, self.CVV)
+
+    def save(self, db_session):
+        try:
+            db_session.add(self)
+            db_session.commit()
+        except SQLAlchemyError:
+            db_session.rollback()
+            raise
+
+    def delete(self, db_session):
+        db_session.delete(self)
+        db_session.commit()
+
+    def serialize_cartao(self):
+        return {
+            'id_cartao': self.id_cartao,
+            'nome_titular': self.nome_titular,
+            'numero_cartao': self.numero_cartao,
+            'data_validade': self.data_validade,
+            'CVV': self.CVV,
+        }
+        return dados_cartao
+
+class Envio(Base):
+    __tablename__ = 'envio'
+    id_envio = Column(Integer, primary_key=True)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+    nome_destinatario = Column(String(50), nullable=False, index=True)
+    endereco = Column(String(70), nullable=False, index=True)
+    cidade = Column(String(50), nullable=False, index=True)
+    estado = Column(String(15), nullable=False, index=True)
+    CEP = Column(String(15), nullable=False, index=True)
+    telefone = Column(String(15), nullable=False, index=True)
+    email = Column(String(50), nullable=False, index=True)
+
+    def __repr__(self):
+        return '<envio: {} {} {} {} {} {} {} {} {}'.format(self.id_envio, self.usuario_id, self.nome_destinatario, self.nome_destinatario, self.endereco, self.cidade, self.estado, self.CEP, self.telefone, self.email)
+
+    def save(self, db_session):
+        try:
+            db_session.add(self)
+            db_session.commit()
+        except SQLAlchemyError:
+            db_session.rollback()
+            raise
+
+    def delete(self, db_session):
+        db_session.delete(self)
+        db_session.commit()
+
+    def serialize_envio(self):
+        return {
+            'id_envio': self.id_envio,
+            'usuario_id': self.usuario_id,
+            'nome_destinatario': self.nome_destinatario,
+            'endereco': self.endereco,
+            'cidade': self.cidade,
+            'estado': self.estado,
+            'CEP': self.CEP,
+            'telefone': self.telefone,
+            'email': self.email,
+        }
+        return dados_envio
 
 def init_db():
     Base.metadata.create_all(bind=engine)
