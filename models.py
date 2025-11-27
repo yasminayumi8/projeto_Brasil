@@ -61,20 +61,19 @@ class Produto(Base):
             'forma_uso': self.forma_uso,
             'imagem_url': self.imagem_url,
         }
-        return dados_produto
 
 
 class Usuario(Base):
     __tablename__ = 'usuarios'
     id = Column(Integer, primary_key=True)
     nome = Column(String, nullable=False, index=True)
-    CPF = Column(String(11), nullable=False, unique=True, index=True)
+    cpf = Column(String(11), nullable=False, unique=True, index=True)
     email = Column(String(30), nullable=False, index=True)
     password_hash = Column(String(128), nullable=False, index=True)  # aumentado o tamanho
     papel = Column(String, default="usuario", nullable=False, index=True)
 
     def __repr__(self):
-        return '<usuario {} {} {} {} {} {}>'.format(self.id, self.nome, self.CPF, self.email, self.password_hash, self.papel)
+        return '<usuario {} {} {} {} {} {}>'.format(self.id, self.nome, self.cpf, self.email, self.password_hash, self.papel)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -98,19 +97,18 @@ class Usuario(Base):
         return {
             'id': self.id,
             'nome': self.nome,
-            'CPF': self.CPF,
+            'cpf': self.cpf,
             'email': self.email,
             'password_hash': self.password_hash,
             'papel': self.papel,
         }
-        return dados_usuario
 
 class Movimentacao(Base):
     __tablename__ = 'movimentacao'
     ID_movimentacao = Column(Integer, primary_key=True)
     quantidade = Column(Integer, nullable=False, index=True)
     produto_id = Column(Integer, ForeignKey('produtos.id_produto'), nullable=False, index=True)
-    data = Column(Date, nullable=False, index=True)  # agora tipo Date
+    data = Column(Integer, nullable=False, index=True)
     status = Column(Boolean, nullable=False, index=True, default=False)
     usuario_id = Column(Integer, ForeignKey('usuarios.id'))
 
@@ -137,11 +135,10 @@ class Movimentacao(Base):
             'ID_movimentacao': self.ID_movimentacao,
             'quantidade': self.quantidade,
             'produto_id': self.produto_id,
-            'data': self.data.isoformat(),
+            'data': self.data,
             'status': self.status,
             'usuario_id': self.usuario_id,
         }
-        return dados_movimentacao
 
 
 class Pedido(Base):
@@ -183,7 +180,7 @@ class Pedido(Base):
 
     def serialize_pedido(self):
         return {
-            'ID_pedido': self.ID_pedido,
+            'id_pedido': self.ID_pedido,
             'produto_id': self.produto_id,
             'usuario_id': self.usuario_id,
             'vendedor_id': self.vendedor_id,
@@ -191,8 +188,6 @@ class Pedido(Base):
             'valor_total': self.valor_total,
             'endereco': self.endereco
         }
-        return dados_pedido
-
 
 class Blog(Base):
     __tablename__ = 'blog'
@@ -201,9 +196,10 @@ class Blog(Base):
     comentario = Column(String(255), nullable=False, index=True)
     titulo = Column(String(255), nullable=False, index=True)
     data = Column(String(255), nullable=False, index=True)
+    link_video = Column(String(255), nullable=False, index=True)
 
     def __repr__(self):
-        return '<blog: {} {} {} {} {}>'.format(self.id_blog, self.usuario_id, self.titulo, self.data, self.comentario)
+        return '<blog: {} {} {} {} {} {}>'.format(self.id_blog, self.usuario_id, self.titulo, self.data, self.comentario, self.link_video)
 
     def save(self, db_session):
         try:
@@ -224,19 +220,21 @@ class Blog(Base):
             'titulo': self.titulo,
             'data': self.data,
             'comentario': self.comentario,
+            'link_video': self.link_video
         }
-        return dados_blog
+
+
 class Cartao(Base):
     __tablename__ = 'cartao'
     id_cartao = Column(Integer, primary_key=True)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
     nome_titular = Column(String(50), nullable=False, index=True)
-    numero_cartao = Column(String(20), nullable=False, index=True)
-    data_validade = Column(Date, nullable=False, index=True)  # agora tipo Date
+    numero_cartao = Column(String(50), nullable=False, index=True)
+    data_validade = Column(String(50), nullable=False, index=True)
     CVV = Column(String(3), nullable=False, index=True)
 
     def __repr__(self):
-        return '<cartao: {} {} {} {} {} {}>'.format(self.id_cartao, self.usuario_id, self.nome_titular, self.numero_cartao, self.data_validade, self.CVV)
+        return '<cartao: {} {} {} {} {} {}>'.format(self.usuario_id, self.id_cartao, self.nome_titular, self.numero_cartao, self.data_validade, self.CVV)
 
     def save(self, db_session):
         try:
@@ -253,12 +251,13 @@ class Cartao(Base):
     def serialize_cartao(self):
         return {
             'id_cartao': self.id_cartao,
+            'usuario_id': self.usuario_id,
             'nome_titular': self.nome_titular,
             'numero_cartao': self.numero_cartao,
             'data_validade': self.data_validade,
             'CVV': self.CVV,
         }
-        return dados_cartao
+
 
 class Envio(Base):
     __tablename__ = 'envio'
@@ -299,7 +298,7 @@ class Envio(Base):
             'telefone': self.telefone,
             'email': self.email,
         }
-        return dados_envio
+
 
 def init_db():
     Base.metadata.create_all(bind=engine)
