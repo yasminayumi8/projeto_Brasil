@@ -511,6 +511,7 @@ def lista_usuario():
         db.close()
 
 
+
 @app.route('/lista/produto', methods=['GET'])
 # @jwt_required()
 def lista_produto():
