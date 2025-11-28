@@ -512,6 +512,7 @@ def lista_usuario():
 
 
 
+
 @app.route('/lista/produto', methods=['GET'])
 # @jwt_required()
 def lista_produto():
