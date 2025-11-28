@@ -351,6 +351,7 @@ def consulta_envio(id):
             return jsonify({'mensagem': 'Dados de envio não encontrado'}), 404
 
         envio_resultado = {
+            "id_envio": var_envio.id_envio,
             "nome_destinatario": var_envio.nome_destinatario,
             "endereco": var_envio.endereco,
             "cidade": var_envio.cidade,
@@ -590,7 +591,7 @@ def lista_pedido():
         db.close()  # Fecha a sessão
 
 
-@app.route('/lista/movimentacao/', methods=['GET'])
+@app.route('/lista/movimentacao', methods=['GET'])
 # @jwt_required()
 # @admin_required
 def lista_movimentacao():
@@ -615,7 +616,7 @@ def lista_movimentacao():
         db.close()  # Fecha a sessão
 
 
-@app.route('/lista/produto/', methods=['GET'])
+@app.route('/lista/envio', methods=['GET'])
 # @jwt_required()
 # @admin_required
 def lista_envio():

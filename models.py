@@ -67,13 +67,13 @@ class Usuario(Base):
     __tablename__ = 'usuarios'
     id = Column(Integer, primary_key=True)
     nome = Column(String, nullable=False, index=True)
-    cpf = Column(String(11), nullable=False, unique=True, index=True)
+    CPF = Column(String(11), nullable=False, unique=True, index=True)
     email = Column(String(30), nullable=False, index=True)
     password_hash = Column(String(128), nullable=False, index=True)  # aumentado o tamanho
     papel = Column(String, default="usuario", nullable=False, index=True)
 
     def __repr__(self):
-        return '<usuario {} {} {} {} {} {}>'.format(self.id, self.nome, self.cpf, self.email, self.password_hash, self.papel)
+        return '<usuario {} {} {} {} {} {}>'.format(self.id, self.nome, self.CPF, self.email, self.password_hash, self.papel)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -97,7 +97,7 @@ class Usuario(Base):
         return {
             'id': self.id,
             'nome': self.nome,
-            'cpf': self.cpf,
+            'cpf': self.CPF,
             'email': self.email,
             'password_hash': self.password_hash,
             'papel': self.papel,
