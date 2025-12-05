@@ -1,13 +1,14 @@
-
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Boolean, Date
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker, relationship, declarative_base
 from werkzeug.security import check_password_hash, generate_password_hash
 
-engine = create_engine('sqlite:///projeto.sqlite3')
+
+engine = create_engine('sqlite:///projeto1.sqlite3')
 SessionLocal = sessionmaker(bind=engine)
 
 Base = declarative_base()
+
 
 
 class Produto(Base):
